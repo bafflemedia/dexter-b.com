@@ -246,7 +246,7 @@ const App = () => {
           </div>
           
           <div className="flex flex-wrap justify-center gap-12">
-            <a href="mailto:contact@dexter-b.com" 
+            <a href="mailto:dexter@dexter-b.com" 
                className="flex items-center gap-2 hover:text-[#f97316] transition-colors group"
                style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.8), -1px -1px 0px rgba(255,255,255,0.05)' }}>
                 <Mail size={14} className="group-hover:scale-110 transition-transform" /> Contact Me
