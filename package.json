@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "exit 1",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server.js",
-    "start": "exit 1"
+    "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^6.0.1",
