@@ -1,41 +1,55 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Search, Calendar, Link as LinkIcon, ShoppingCart, FileText, Monitor, 
-  ChevronRight, Star, MapPin, ChevronLeft, Cpu, Gamepad2, Layers, 
-  Disc, Film, Mic2, Zap, Home, Cat, Mail, MessageSquare, ShieldCheck
+  FileText, Monitor, ChevronRight, MapPin, ChevronLeft, Cpu, 
+  Gamepad2, Layers, Disc, Film, Mic2, Zap, Home, Cat, 
+  Mail, MessageSquare, ShieldCheck, ShoppingCart, Link as LinkIcon
 } from 'lucide-react';
 
 // Baffle Media Standard Architecture
-// Material Science: Brushed Stainless Steel, SW Cyberspace, Anchor's Aweigh
-// Brand: DexterB (Polymath / Retired Software Engineer)
+// Material Science: Brushed Stainless Steel Face, Deep Steel Outlines
+// Persona: Polymath • Retired Software Engineer • Signal Processing
 
 const App = () => {
+  const [manifestData, setManifestData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeGearIndex, setActiveGearIndex] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
 
-  const featuredGear = [
-    { 
-      id: 1, 
-      name: 'Fanatec DD2 Wheel Base', 
-      desc: 'The direct-drive backbone of the Sim Rig build.', 
-      link: '#',
-      img: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&q=80&w=800' 
-    },
-    { 
-      id: 2, 
-      name: 'Shure SM7B Microphone', 
-      desc: 'Signal clarity for high-fidelity broadcasts.', 
-      link: '#',
-      img: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&q=80&w=800' 
-    },
-    { 
-      id: 3, 
-      name: 'LG 49" UltraWide', 
-      desc: 'Maximum screen real-estate for SE workflows.', 
-      link: '#',
-      img: 'https://images.unsplash.com/photo-1547119957-630f9c47b79f?auto=format&fit=crop&q=80&w=800' 
-    },
-  ];
+  // The Telemetry Handshake: Fetch Notion data via our local/prod Node Bridge
+  useEffect(() => {
+    const fetchManifest = async () => {
+      try {
+        // Vite environment variable checks if we are running local dev or prod
+        const baseUrl = import.meta.env.MODE === 'development' ? 'http://localhost:3000' : '';
+        const response = await fetch(`${baseUrl}/api/manifest`);
+        
+        if (!response.ok) throw new Error('Signal lost during Notion handshake.');
+        
+        const data = await response.json();
+        setManifestData(data);
+      } catch (error) {
+        console.error('[SYSTEM FAILURE]', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchManifest();
+  }, []);
+
+  // Filter the incoming payload for Spotlight-designated hardware
+  const spotlightGear = manifestData.filter(gear => gear.spotlight);
+
+  const nextGear = () => {
+    if (spotlightGear.length > 0) {
+      setActiveGearIndex((prev) => (prev + 1) % spotlightGear.length);
+    }
+  };
+
+  const prevGear = () => {
+    if (spotlightGear.length > 0) {
+      setActiveGearIndex((prev) => (prev - 1 + spotlightGear.length) % spotlightGear.length);
+    }
+  };
 
   const manifestCategories = [
     { id: 'compute', name: 'Compute Node', icon: <Cpu size={32} />, desc: 'Hardware & Core Systems' },
@@ -49,9 +63,6 @@ const App = () => {
     { id: 'nelly', name: 'Feline Logistics', icon: <Cat size={32} />, desc: 'Biometric Assets (Nelly)' },
   ];
 
-  const nextGear = () => setActiveGearIndex((prev) => (prev + 1) % featuredGear.length);
-  const prevGear = () => setActiveGearIndex((prev) => (prev - 1 + featuredGear.length) % featuredGear.length);
-
   return (
     <div className="min-h-screen bg-[#2b3d4f] text-[#e2e8f0] font-sans selection:bg-[#e2001a] selection:text-white relative overflow-x-hidden">
       {/* Background Engineering Grid */}
@@ -63,7 +74,7 @@ const App = () => {
       <header className="pt-24 pb-16 px-4 max-w-7xl mx-auto text-center relative z-20">
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-transparent via-[#e2001a] to-transparent shadow-[0_0_15px_#e2001a]"></div>
         
-        {/* REFACTORED BRUSHED STAINLESS STEEL 3D LOGO */}
+        {/* REFACTORED BRUSHED STAINLESS STEEL 3D LOGO - BLOCK KERNING */}
         <div className="relative inline-block px-16 py-10 group"> 
             <h1 className="absolute inset-0 px-16 py-10 text-6xl sm:text-8xl md:text-[10.5rem] font-black uppercase tracking-[0.05em] leading-none
                            text-black translate-x-2 translate-y-2 select-none blur-[1px]">
@@ -125,41 +136,73 @@ const App = () => {
             
             <div className="relative bg-[#434b53]/40 backdrop-blur-md rounded-xl border-t border-l border-white/10 border-b border-r border-black/60 shadow-[30px_30px_60px_-15px_rgba(0,0,0,0.8)] min-h-[450px] flex overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-40"></div>
-                <div className="absolute top-0 right-0 p-6 font-mono text-[10px] text-[#8a8e91] tracking-widest uppercase opacity-40 z-20">Node_ID_00{activeGearIndex + 1}</div>
                 
-                <div className="flex flex-col md:flex-row w-full relative z-10">
-                    {/* Visual Asset Section */}
-                    <div className="w-full md:w-1/2 relative bg-[#1a2632] overflow-hidden">
-                        <img 
-                            key={activeGearIndex} 
-                            src={featuredGear[activeGearIndex].img} 
-                            alt={featuredGear[activeGearIndex].name}
-                            className="w-full h-64 md:h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700 animate-in fade-in zoom-in-110"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800';
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#434b53]/40 hidden md:block"></div>
+                {isLoading ? (
+                    <div className="w-full h-[450px] flex flex-col items-center justify-center text-[#8a8e91] font-mono tracking-widest uppercase animate-pulse">
+                        <Cpu className="mb-4 text-[#f97316] animate-spin-slow" size={48} />
+                        Establishing Node Connection...
                     </div>
-
-                    {/* Description Section */}
-                    <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center items-center md:items-start text-center md:text-left bg-gradient-to-br from-transparent to-black/20">
-                        <h3 className="text-3xl md:text-5xl font-black text-[#f8fafc] uppercase tracking-tighter mb-4 italic leading-none drop-shadow-[4px_4px_0px_#1a2632]">
-                            {featuredGear[activeGearIndex].name}
-                        </h3>
-                        <p className="text-[#8a8e91] font-mono text-xs md:text-sm uppercase tracking-[0.2em] max-w-lg leading-relaxed italic drop-shadow-md">
-                            {featuredGear[activeGearIndex].desc}
-                        </p>
+                ) : spotlightGear.length > 0 ? (
+                    <>
+                        <div className="absolute top-0 right-0 p-6 font-mono text-[10px] text-[#8a8e91] tracking-widest uppercase opacity-40 z-20">Node_ID_{spotlightGear[activeGearIndex].id.slice(0,6)}</div>
                         
-                        <div className="flex items-center gap-4 mt-10">
-                            <button onClick={prevGear} className="p-3 hover:text-[#f97316] transition-all bg-[#2b3d4f]/95 rounded-full border border-white/5 shadow-xl active:scale-90"><ChevronLeft size={24}/></button>
-                            <a href={featuredGear[activeGearIndex].link} className="px-10 py-4 bg-[#f97316] text-[#2b3d4f] font-black uppercase text-xs tracking-[0.2em] hover:bg-white transition-all transform hover:-translate-y-1 active:scale-95 skew-x-[-12deg] shadow-[8px_8px_0px_#000]">
-                                Access Specs
-                            </a>
-                            <button onClick={nextGear} className="p-3 hover:text-[#f97316] transition-all bg-[#2b3d4f]/95 rounded-full border border-white/5 shadow-xl active:scale-90"><ChevronRight size={24}/></button>
+                        <div className="flex flex-col md:flex-row w-full relative z-10">
+                            <div className="w-full md:w-1/2 relative bg-[#1a2632] overflow-hidden">
+                                <img 
+                                    key={activeGearIndex} 
+                                    src={spotlightGear[activeGearIndex].image || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800'} 
+                                    alt={spotlightGear[activeGearIndex].name}
+                                    className="w-full h-64 md:h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700 animate-in fade-in zoom-in-110"
+                                    onError={(e) => {
+                                      e.currentTarget.src = 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800';
+                                    }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#434b53]/40 hidden md:block"></div>
+                            </div>
+
+                            <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center items-center md:items-start text-center md:text-left bg-gradient-to-br from-transparent to-black/20">
+                                <h3 className="text-3xl md:text-5xl font-black text-[#f8fafc] uppercase tracking-tighter mb-4 italic leading-none drop-shadow-[4px_4px_0px_#1a2632]">
+                                    {spotlightGear[activeGearIndex].name}
+                                </h3>
+                                <p className="text-[#8a8e91] font-mono text-xs md:text-sm uppercase tracking-[0.1em] max-w-lg leading-relaxed italic"
+                                   style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                                    {spotlightGear[activeGearIndex].copy || "Awaiting intelligence payload for this sector."}
+                                </p>
+                                
+                                <div className="flex items-center gap-4 mt-10">
+                                    <button onClick={prevGear} className="p-3 hover:text-[#f97316] transition-all bg-[#2b3d4f]/95 rounded-full border border-white/5 shadow-xl active:scale-90"><ChevronLeft size={24}/></button>
+                                    
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        {/* Dynamic Affiliate Vectors */}
+                                        {spotlightGear[activeGearIndex].amazon && (
+                                            <a href={spotlightGear[activeGearIndex].amazon} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 bg-[#f97316] text-[#2b3d4f] font-black uppercase text-[10px] tracking-[0.2em] hover:bg-white transition-all shadow-[6px_6px_0px_#000] active:translate-y-1 active:translate-x-1 active:shadow-[0px_0px_0px_#000]">
+                                                <ShoppingCart size={16} /> Amazon Route
+                                            </a>
+                                        )}
+                                        {spotlightGear[activeGearIndex].direct && (
+                                            <a href={spotlightGear[activeGearIndex].direct} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 bg-[#434b53] border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.2em] hover:bg-white/10 transition-all shadow-[6px_6px_0px_#000] active:translate-y-1 active:translate-x-1 active:shadow-[0px_0px_0px_#000]">
+                                                <LinkIcon size={16} /> Direct Intel
+                                            </a>
+                                        )}
+                                        {/* Fallback if no links exist */}
+                                        {!spotlightGear[activeGearIndex].amazon && !spotlightGear[activeGearIndex].direct && (
+                                            <span className="px-6 py-3 border border-white/10 text-[#8a8e91] font-mono uppercase text-[10px] tracking-widest cursor-not-allowed">
+                                                Link Offline
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <button onClick={nextGear} className="p-3 hover:text-[#f97316] transition-all bg-[#2b3d4f]/95 rounded-full border border-white/5 shadow-xl active:scale-90"><ChevronRight size={24}/></button>
+                                </div>
+                            </div>
                         </div>
+                    </>
+                ) : (
+                    <div className="w-full h-[450px] flex flex-col items-center justify-center text-[#8a8e91] font-mono tracking-widest uppercase">
+                        <Monitor className="mb-4 text-[#8a8e91] opacity-50" size={48} />
+                        No active Spotlight gear detected in Manifest.
                     </div>
-                </div>
+                )}
             </div>
         </section>
 
@@ -190,7 +233,7 @@ const App = () => {
 
       </main>
 
-      {/* REFACTORED FOOTER */}
+      {/* FOOTER */}
       <footer className="border-t border-[#434b53] py-20 px-6 bg-[#1a2632] relative z-10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12 text-[#8a8e91] text-[10px] font-mono uppercase tracking-[0.4em]">
           <div className="text-center md:text-left space-y-2">
