@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "node server.js",
-    "start": "exit 1",
+    "start": "exit 1"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^6.0.1",
