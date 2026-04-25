@@ -15,6 +15,18 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Force HTTPS and WWW
+app.use((req, res, next) => {
+  const host = req.get('host');
+  const isHttps = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https';
+
+  // Logic Scrub: If not HTTPS OR not starting with www., redirect to the clean URL
+  if (!isHttps || !host.startsWith('www.')) {
+    return res.redirect(301, `https://www.dexter-b.com${req.url}`);
+  }
+  next();
+});
+
 // 3. Middleware
 app.use(cors()); 
 app.use(express.json());
