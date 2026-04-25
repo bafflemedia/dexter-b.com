@@ -1,0 +1,8 @@
+# Baffle Media Nexus - robots.txt
+# Standard "Day 0" configuration: Open for all high-fidelity crawlers.
+
+User-agent: *
+Allow: /
+
+# Direct the librarian to the navigation chart
+Sitemap: https://www.dexter-b.com/sitemap.xml
