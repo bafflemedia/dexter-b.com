@@ -1,0 +1,32 @@
+# ----------------------------------------------------------------------
+# 1. HOSTINGER / NODE.JS PASSENGER CONFIG (Preserved from Server)
+# ----------------------------------------------------------------------
+PassengerAppRoot /home/u501702799/domains/dexter-b.com/nodejs
+PassengerAppType node
+PassengerNodejs /opt/alt/alt-nodejs24/root/bin/node
+PassengerStartupFile server.js
+PassengerBaseURI /
+PassengerRestartDir /home/u501702799/domains/dexter-b.com/nodejs/tmp
+SetEnv NODE_OPTIONS "--require /home/u501702799/domains/dexter-b.com/public_html/.builds/config/preload-timestamp.js"
+SetEnv LSNODE_CONSOLE_LOG console.log
+RewriteRule ^\.builds - [F,L]
+
+# ----------------------------------------------------------------------
+# 2. SEO & CANONICALIZATION (Signal Processing)
+# ----------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Force HTTPS and WWW (Consolidates traffic to one "Source of Truth")
+  RewriteCond %{HTTPS} off [OR]
+  RewriteCond %{HTTP_HOST} !^www\. [NC]
+  RewriteRule ^(.*)$ https://www.dexter-b.com/$1 [L,R=301]
+
+  # ----------------------------------------------------------------------
+  # 3. SPA ROUTING (Prevents 404s on Refresh)
+  # ----------------------------------------------------------------------
+  # If the request isn't a physical file or directory, send it to index.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
