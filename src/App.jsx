@@ -98,9 +98,9 @@ const App = () => {
               Dexter B
             </h1>
 
-            <h1 className="relative text-6xl sm:text-8xl md:text-[10.5rem] font-black uppercase tracking-[0.05em] leading-none
+            <h1 className="text-6xl sm:text-8xl md:text-[10.5rem] font-black uppercase tracking-[0.05em] leading-none
                            text-transparent bg-clip-text bg-gradient-to-b from-[#f1f5f9] via-[#cbd5e1] to-[#94a3b8]
-                           relative z-20 transition-all duration-700">
+                           z-20 transition-all duration-700">
               Dexter B
             </h1>
             
@@ -134,7 +134,7 @@ const App = () => {
                  <div className="h-px flex-1 bg-gradient-to-r from-[#f97316]/50 to-transparent"></div>
             </div>
             
-            <div className="relative bg-[#434b53]/40 backdrop-blur-md rounded-xl border-t border-l border-white/10 border-b border-r border-black/60 shadow-[30px_30px_60px_-15px_rgba(0,0,0,0.8)] min-h-[450px] flex overflow-hidden group">
+            <div className="relative bg-[#434b53]/40 backdrop-blur-md rounded-xl border border-white/10 shadow-[30px_30px_60px_-15px_rgba(0,0,0,0.8)] min-h-[450px] flex overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-40"></div>
                 
                 {isLoading ? (
@@ -269,7 +269,7 @@ const App = () => {
 };
 
 const NavCard = ({ icon, title, desc, opacity = "opacity-100" }) => (
-  <a href="#" className={`group relative block p-8 rounded-lg bg-[#434b53]/60 border-t border-l border-white/10 border-b border-r border-black/60 transition-all duration-500 hover:-translate-y-2 hover:border-[#f97316]/50 shadow-[15px_15px_40px_-10px_rgba(0,0,0,0.6)] overflow-hidden backdrop-blur-md ${opacity}`}>
+  <a href="#" className={`group relative block p-8 rounded-lg bg-[#434b53]/60 border border-white/10 transition-all duration-500 hover:-translate-y-2 hover:border-[#f97316]/50 shadow-[15px_15px_40px_-10px_rgba(0,0,0,0.6)] overflow-hidden backdrop-blur-md ${opacity}`}>
     <div className="absolute inset-0 border border-white/5 rounded-lg pointer-events-none opacity-20"></div>
     <div className="text-[#8a8e91] mb-8 group-hover:text-[#e2001a] transition-all transform group-hover:scale-110 drop-shadow-[8px_8px_12px_rgba(0,0,0,0.7)]">
       {icon}
@@ -285,7 +285,7 @@ const NavCard = ({ icon, title, desc, opacity = "opacity-100" }) => (
 );
 
 const CategoryTile = ({ icon, name, desc }) => (
-  <button className="group relative aspect-square md:aspect-video bg-[#434b53]/30 border-t border-l border-white/5 border-b border-r border-black/60 rounded-lg flex flex-col items-center justify-center p-6 hover:border-[#f97316]/60 transition-all hover:bg-[#2b3d4f]/95 shadow-[20px_20px_45px_-15px_rgba(0,0,0,0.7)] overflow-hidden active:scale-95 active:shadow-inner">
+  <button className="group relative aspect-square md:aspect-video bg-[#434b53]/30 border border-white/5 rounded-lg flex flex-col items-center justify-center p-6 hover:border-[#f97316]/60 transition-all hover:bg-[#2b3d4f]/95 shadow-[20px_20px_45px_-15px_rgba(0,0,0,0.7)] overflow-hidden active:scale-95 active:shadow-inner">
     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 pointer-events-none"></div>
     <div className="text-[#8a8e91] group-hover:text-[#f97316] transition-all group-hover:scale-125 mb-4 duration-500 drop-shadow-[10px_10px_15px_rgba(0,0,0,0.8)]">
       {icon}
