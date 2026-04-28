@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
     "server": "tsx server.ts",
-    "start": "NODE_ENV=production node server.ts"
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "vite build",
+    "build:server": "tsc server.ts --outDir dist --module NodeNext --moduleResolution NodeNext --esModuleInterop",
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "@notionhq/client": "^5.20.0",
