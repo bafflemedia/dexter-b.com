@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FileText, Monitor, ChevronRight, MapPin, ChevronLeft, Cpu, 
   Gamepad2, Layers, Disc, Film, Mic2, Zap, Home, Cat, 
@@ -9,29 +9,53 @@ import {
 // Material Science: Brushed Stainless Steel Face, Deep Steel Outlines
 // Persona: Polymath • Retired Software Engineer • Signal Processing
 
-const App = () => {
-  const [manifestData, setManifestData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeGearIndex, setActiveGearIndex] = useState(0);
+// --- STRICT TYPING DIRECTIVES ---
+
+interface ManifestItem {
+  id: string;
+  name: string;
+  spotlight?: boolean;
+  image?: string;
+  copy?: string;
+  amazon?: string;
+  direct?: string;
+}
+
+interface NavCardProps {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  opacity?: string;
+}
+
+interface CategoryTileProps {
+  icon: React.ReactNode;
+  name: string;
+  desc: string;
+}
+
+const App: React.FC = () => {
+  const [manifestData, setManifestData] = useState<ManifestItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeGearIndex, setActiveGearIndex] = useState<number>(0);
 
   // The Telemetry Handshake: Fetch Notion data via our local/prod Node Bridge
   useEffect(() => {
-    const fetchManifest = async () => {
-      try {
-        // Vite environment variable checks if we are running local dev or prod
-        const baseUrl = import.meta.env.MODE === 'development' ? 'http://localhost:3000' : '';
-        const response = await fetch(`${baseUrl}/api/manifest`);
-        
-        if (!response.ok) throw new Error('Signal lost during Notion handshake.');
-        
-        const data = await response.json();
-        setManifestData(data);
-      } catch (error) {
-        console.error('[SYSTEM FAILURE]', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchManifest = async () => {
+    try {
+      // Change this from 'http://localhost:3000/api/manifest' to just '/api/manifest'
+      const response = await fetch('/api/manifest'); 
+      
+      if (!response.ok) throw new Error('Signal lost during Notion handshake.');
+      
+      const data: ManifestItem[] = await response.json();
+      setManifestData(data);
+    } catch (error) {
+      console.error('[SYSTEM FAILURE]', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
     fetchManifest();
   }, []);
@@ -176,12 +200,12 @@ const App = () => {
                                         {/* Dynamic Affiliate Vectors */}
                                         {spotlightGear[activeGearIndex].amazon && (
                                             <a href={spotlightGear[activeGearIndex].amazon} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 bg-[#f97316] text-[#2b3d4f] font-black uppercase text-[10px] tracking-[0.2em] hover:bg-white transition-all shadow-[6px_6px_0px_#000] active:translate-y-1 active:translate-x-1 active:shadow-[0px_0px_0px_#000]">
-                                                <ShoppingCart size={16} /> Amazon Route
+                                                <ShoppingCart size={16} /> Amazon
                                             </a>
                                         )}
                                         {spotlightGear[activeGearIndex].direct && (
                                             <a href={spotlightGear[activeGearIndex].direct} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-6 py-3 bg-[#434b53] border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.2em] hover:bg-white/10 transition-all shadow-[6px_6px_0px_#000] active:translate-y-1 active:translate-x-1 active:shadow-[0px_0px_0px_#000]">
-                                                <LinkIcon size={16} /> Direct Intel
+                                                <LinkIcon size={16} /> Direct
                                             </a>
                                         )}
                                         {/* Fallback if no links exist */}
@@ -268,7 +292,7 @@ const App = () => {
   );
 };
 
-const NavCard = ({ icon, title, desc, opacity = "opacity-100" }) => (
+const NavCard: React.FC<NavCardProps> = ({ icon, title, desc, opacity = "opacity-100" }) => (
   <a href="#" className={`group relative block p-8 rounded-lg bg-[#434b53]/60 border border-white/10 transition-all duration-500 hover:-translate-y-2 hover:border-[#f97316]/50 shadow-[15px_15px_40px_-10px_rgba(0,0,0,0.6)] overflow-hidden backdrop-blur-md ${opacity}`}>
     <div className="absolute inset-0 border border-white/5 rounded-lg pointer-events-none opacity-20"></div>
     <div className="text-[#8a8e91] mb-8 group-hover:text-[#e2001a] transition-all transform group-hover:scale-110 drop-shadow-[8px_8px_12px_rgba(0,0,0,0.7)]">
@@ -284,7 +308,7 @@ const NavCard = ({ icon, title, desc, opacity = "opacity-100" }) => (
   </a>
 );
 
-const CategoryTile = ({ icon, name, desc }) => (
+const CategoryTile: React.FC<CategoryTileProps> = ({ icon, name, desc }) => (
   <button className="group relative aspect-square md:aspect-video bg-[#434b53]/30 border border-white/5 rounded-lg flex flex-col items-center justify-center p-6 hover:border-[#f97316]/60 transition-all hover:bg-[#2b3d4f]/95 shadow-[20px_20px_45px_-15px_rgba(0,0,0,0.7)] overflow-hidden active:scale-95 active:shadow-inner">
     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-40 pointer-events-none"></div>
     <div className="text-[#8a8e91] group-hover:text-[#f97316] transition-all group-hover:scale-125 mb-4 duration-500 drop-shadow-[10px_10px_15px_rgba(0,0,0,0.8)]">
