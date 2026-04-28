@@ -5,14 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "tsx server.ts",
-    "build": "npm run build:client && npm run build:server",
-    "build:client": "vite build",
-    "build:server": "tsc server.ts --outDir dist --module NodeNext --moduleResolution NodeNext --esModuleInterop",
-    "start": "node dist/server.js"
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "server": "node server.js",
+    "start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
-    "@notionhq/client": "^5.20.0",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.5.0",
     "cors": "^2.8.6",
