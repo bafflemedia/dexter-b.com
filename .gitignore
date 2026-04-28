@@ -23,7 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Securities & Secrets
-.env
+# Securities & Secrets\
 .env.local
 .env.*.local
