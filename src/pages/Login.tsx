@@ -14,28 +14,34 @@ export const Login = ({ setAuthStatus }: LoginProps) => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        setErrorMsg(''); // Clear any previous errors on new attempt
+        setErrorMsg(''); 
         
         try {
-            const response = await fetch('http://localhost:3000/api/login', {
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({ username, password })
             });
 
+            // 1. TELEMETRY INJECT: Check what the server actually handed back
+            const contentType = response.headers.get("content-type");
+            if (contentType && !contentType.includes("application/json")) {
+                // If it's not JSON, read the raw text so we can see what Hostinger is doing
+                const rawText = await response.text();
+                throw new Error(`Invalid Response Type: ${contentType}. Preview: ${rawText.substring(0, 40)}...`);
+            }
+
             if (response.ok) {
                 const data = await response.json();
                 setAuthStatus(true); 
                 navigate('/bats');   
             } else {
-                // If we get a 401 or 403, we trigger the visual error
                 setErrorMsg('Signal rejected: Invalid credentials.');
-                console.error("Signal rejected: Invalid credentials.");
             }
-        } catch (err) {
-             // Catch network failures (e.g., if Node server crashes)
-             setErrorMsg('Comm link failure: Backend unreachable.');
+        } catch (err: any) {
+             // 2. SURFACE THE ERROR: Print the exact technical failure to the UI
+             setErrorMsg(`TRACE: ${err.message || 'Unknown Network Error'}`);
         }
     };
 
