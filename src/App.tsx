@@ -1,8 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState } from 'react';
 import Home from './pages/Home';
-import BATS from './pages/BATS'; // Assuming this exists in your pages dir
+import BATS from './pages/BATS'; 
+import { Login } from './pages/Login';
 
 const App: React.FC = () => {
+  // 1. The Clearance State: Defaults to locked (false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   return (
     <Router>
       <div className="min-h-screen bg-[#2b3d4f] text-[#e2e8f0] font-sans selection:bg-[#e2001a] selection:text-white relative overflow-x-hidden">
@@ -12,8 +17,19 @@ const App: React.FC = () => {
         </div>
 
         <Routes>
+          {/* Public Sector */}
           <Route path="/" element={<Home />} />
-          <Route path="/bats" element={<BATS />} />
+          
+          {/* The Gatekeeper UI */}
+          <Route path="/login" element={<Login setAuthStatus={setIsAuthenticated} />} />
+
+          {/* Protected Sector: The BATS Hub */}
+          <Route 
+            path="/bats" 
+            element={
+              isAuthenticated ? <BATS /> : <Navigate to="/login" replace />
+            } 
+          />
         </Routes>
       </div>
     </Router>

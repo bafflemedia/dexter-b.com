@@ -41,7 +41,13 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchManifest = async () => {
       try {
-        const response = await fetch('/api/manifest'); 
+        const response = await fetch('http://localhost:3000/api/manifest', {
+          method: 'GET',
+          credentials: 'include', // <-- THIS IS THE REQUIRED FIX
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
         
         if (!response.ok) throw new Error('Signal lost during Notion handshake.');
         

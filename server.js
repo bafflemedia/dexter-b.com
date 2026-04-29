@@ -1,14 +1,24 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs'; // INJECTED: File System module
 
-// 1. Initialize Local Vault
-dotenv.config();
-
+// 1. Initialize Local Vault (The Fix)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Explicitly check for .env.local first, fallback to .env
+if (fs.existsSync(path.join(__dirname, '.env.local'))) {
+  dotenv.config({ path: '.env.local' });
+  console.log('[SYSTEM] Loaded vault: .env.local');
+} else {
+  dotenv.config();
+  console.log('[SYSTEM] Loaded vault: .env');
+}
 
 // 2. Initialize Express
 const app = express();
@@ -31,13 +41,86 @@ if (process.env.NODE_ENV === 'production') {
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://www.dexter-b.com' 
-    : 'http://localhost:5173'
+    : 'http://localhost:5173',
+  credentials: true // CRITICAL: Required to send/receive HttpOnly cookies
 }));
 app.use(express.json());
+app.use(cookieParser()); // Intercepts and parses incoming cookies
 
 // ============================================================================
-// 5. THE API PAYLOAD: Native REST Fetch
+// 5. THE GATEKEEPER: JWT Auth & Tiered Access
 // ============================================================================
+
+// User credentials mapped to roles (passwords injected via environment variables)
+const USERS = [
+  { username: 'dexterb', password: process.env.PASS_DEXTERB, role: 'guardian' },
+  { username: 'kate', password: process.env.PASS_KATE, role: 'collaborator' },
+  { username: 'iliana', password: process.env.PASS_ILIANA, role: 'viewer' }
+];
+
+// Login route: Validates credentials and issues a JWT
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // TEMPORARY TELEMETRY: Logs what the backend actually sees (remove before production)
+  console.log(`[AUTH CHECK] Backend expects: ${process.env.PASS_DEXTERB}`);
+
+  const user = USERS.find(u => u.username === username && u.password === password);
+  
+  if (!user) {
+    return res.status(401).json({ error: 'Signal rejected: Invalid credentials.' });
+  }
+
+  // Mint the JWT with the user's role
+  const token = jwt.sign(
+    { username: user.username, role: user.role }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '12h' } 
+  );
+
+  // Secure the token in an HttpOnly cookie
+  res.cookie('baffle_auth', token, {
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === 'production', 
+    sameSite: 'strict', 
+    maxAge: 12 * 60 * 60 * 1000 // 12 hours
+  });
+
+  res.json({ message: 'Authentication successful', user: { username: user.username, role: user.role } });
+});
+
+// Logout route: Clears the session cookie
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('baffle_auth');
+  res.json({ message: 'Comm link severed. Logged out.' });
+});
+
+// Authorization middleware: Verifies JWT for protected routes
+const requireAuth = (req, res, next) => {
+  const token = req.cookies.baffle_auth;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Perimeter Breach: No clearance badge provided.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; 
+    next(); 
+  } catch (err) {
+    // Log the specific JWT failure
+    console.warn(`[AUTH PERIMETER] Clearance rejected: ${err.message}`);
+    
+    // Return a generic, safe response to the client
+    return res.status(403).json({ error: 'Access Denied: Invalid or expired clearance.' });
+  }
+};
+
+// ============================================================================
+// 6. THE API PAYLOAD: Native REST Fetch
+// ============================================================================
+
+// Public Route (No auth required)
 app.get('/api/manifest', async (req, res) => {
   try {
     const dbId = process.env.NOTION_MANIFEST_DB_ID;
@@ -97,8 +180,19 @@ app.get('/api/manifest', async (req, res) => {
   }
 });
 
+// Protected route example: BATS operations (Requires Auth)
+app.post('/api/notion/bats', requireAuth, async (req, res) => {
+  // Role-based logic check
+  if (req.user.role === 'viewer') {
+    return res.status(403).json({ error: 'Clearance level insufficient for write access.' });
+  }
+
+  // Insert your Notion POST fetch logic here for BATS additions
+  res.json({ message: `Access granted to BATS database for ${req.user.username}` });
+});
+
 // ============================================================================
-// 6. FRONTEND DELIVERY & FALLBACK ROUTING (BATS Fix)
+// 7. FRONTEND DELIVERY & FALLBACK ROUTING (BATS Fix)
 // ============================================================================
 
 // Serve static files from the React build directory
@@ -110,7 +204,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// 7. Ignition
+// 8. Ignition
 app.listen(PORT, () => {
   console.log(`[SYSTEM] Baffle Media Bridge active on port ${PORT}`);
   console.log(`[ENVIRONMENT] ${process.env.NODE_ENV || 'development'}`);
