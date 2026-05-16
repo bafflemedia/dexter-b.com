@@ -26,6 +26,16 @@ Read these docs before making architecture changes:
 - docs/bats-system-overview.md
 - docs/notion-access-policy.md
 
+## Repository Boundary
+
+dexter-b.com is the Dexter B personal brand website.
+
+BATS is only one protected internal application within the site.
+
+Do not assume every route, component, database, or page belongs to BATS.
+
+Public landing page content, public links, affiliate/product presentation, and personal brand site content must be preserved unless Dexter explicitly asks to change them.
+
 ## Architecture
 
 Frontend:
