@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import fs from 'fs'; // INJECTED: File System module
 
 // 1. Initialize Local Vault (The Fix)
@@ -178,7 +178,7 @@ app.get('/api/manifest', async (req, res) => {
 // BATS MAPPER HELPERS
 // ============================================================================
 
-const mapNotionPageToAsset = (page) => {
+export const mapNotionPageToAsset = (page) => {
   const props = page.properties;
   return {
     id: page.id,
@@ -214,7 +214,7 @@ const mapNotionPageToAsset = (page) => {
   };
 };
 
-const mapAssetToNotionProperties = (ad) => {
+export const mapAssetToNotionProperties = (ad) => {
   const props = {
     "Name":         { title: [{ text: { content: ad.name } }] },
     "Status":       { select: { name: ad.status || 'Available' } },
@@ -435,8 +435,14 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// 8. Ignition
-app.listen(PORT, () => {
-  console.log(`[SYSTEM] Baffle Media Bridge active on port ${PORT}`);
+export const startServer = (port = PORT) => app.listen(port, () => {
+  console.log(`[SYSTEM] Baffle Media Bridge active on port ${port}`);
   console.log(`[ENVIRONMENT] ${process.env.NODE_ENV || 'development'}`);
 });
+
+export { app };
+
+// 8. Ignition
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  startServer();
+}
