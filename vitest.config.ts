@@ -8,7 +8,10 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.ts',
     css: true,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: [
+      'src/**/*.{test,spec}.{ts,tsx}',
+      'tests/api/**/*.{test,spec}.{js,ts}',
+    ],
     coverage: {
       reporter: ['text', 'html'],
       exclude: ['dist/**', 'tests/**', 'src/test/**'],
