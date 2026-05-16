@@ -33,10 +33,9 @@ interface AssetData {
   syncStatus: string; 
   isPersonalTransfer: boolean;
   manualLink?: string;
-  // New State from Baffle_Ops_Update
   referenceVideoUrl: string;
   functionalCheck: boolean;
-  photoGallery: string[]; // Array for the "Trinity Shots"
+  photoGallery: string[]; 
 }
 
 interface ReceiptData {
@@ -60,9 +59,10 @@ interface MockProject { id: string; name: string; }
 interface MockReceipt { id: string; name: string; date: string; merchantName: string; }
 interface MockMerchant { id: string; name: string; type: string; }
 
-const INITIAL_CONFIG: Config = { apiKey: '', databaseId: '', bridgeUrl: '/api/bats-sync', mode: 'mock' };
+// ALIGNMENT UPDATE: Pointing directly to the newly established Express protected route
+const INITIAL_CONFIG: Config = { apiKey: '', databaseId: '', bridgeUrl: '/api/bats', mode: 'mock' };
 
-// --- MOCK RELATIONS (To be replaced with SWR/Fetch hooks) ---
+// --- MOCK RELATIONS (Target for v1.4 GET request replacement) ---
 const mockCategories: MockCategory[] = [
   { id: 'cat1', name: 'Visuals - Displays', code: 'VIS', lastIndex: 1 },
   { id: 'cat2', name: 'Computing', code: 'CMP', lastIndex: 108 },
@@ -165,7 +165,6 @@ export default function BaffleAssetPro() {
     }));
   };
 
-  // Auto-increment Index based on Category Selection
   useEffect(() => {
     if (asset.categoryId) {
       const cat = mockCategories.find(c => c.id === asset.categoryId);
@@ -181,7 +180,6 @@ export default function BaffleAssetPro() {
         const resultUrl = reader.result as string;
         if (type === 'photo') {
           setPhotoPreview(resultUrl);
-          // Accumulate for the "Trinity Shots" Array
           setAsset(prev => ({ ...prev, photoGallery: [...prev.photoGallery, resultUrl] }));
         }
         if (type === 'receipt') setReceiptFilePreview(resultUrl);
@@ -205,11 +203,10 @@ export default function BaffleAssetPro() {
     setShowResetModal(false);
   };
 
-const submitToNotion = async () => {
+  const submitToNotion = async () => {
     setLoading(true);
     try {
       if (config.mode === 'mock') {
-        // Keep your mock delay logic here for testing the UI states
         await new Promise(r => setTimeout(r, 1200));
         const catCode = mockCategories.find(c => c.id === asset.categoryId)?.code || "UNK";
         const paddedIndex = asset.index.padStart(3, '0');
@@ -218,30 +215,34 @@ const submitToNotion = async () => {
           batsUrl: `https://baffle.link/BM-${catCode}-${paddedIndex}`
         });
       } else {
-        // LIVE ROUTING LOGIC
+        // ALIGNMENT: Packaging exactly what the Express POST route intercepts
         const payload = { assetData: asset, receiptData: receipt };
-        console.log("[Baffle Ops] Transmitting payload to proxy:", payload);
+        console.log("[Baffle Ops] Transmitting payload to bridge:", payload);
         
-        const response = await fetch('/api/bats-sync', { 
+        const response = await fetch(config.bridgeUrl, { 
           method: 'POST', 
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // CRITICAL: This allows the JWT cookie through the perimeter
           body: JSON.stringify(payload) 
         });
 
         const data = await response.json();
         
-        if (data.success) {
-          // CCC Loop Closed. Update UI with the returned formulas.
-          setVaultData({ baffleId: data.baffleId, batsUrl: data.batsUrl });
-          console.log("[Baffle Ops] Notion Vault Sync Complete. ID:", data.notionId);
+        if (response.ok) {
+          // CCC Loop Closed. Using the raw Notion page_id as a temporary anchor until Formulas resolve.
+          setVaultData({ 
+            baffleId: `NODE-${data.page_id.slice(-4).toUpperCase()}`, 
+            batsUrl: `https://notion.so/${data.page_id.replace(/-/g, '')}` 
+          });
+          console.log("[Baffle Ops] Notion Vault Sync Complete. Internal ID:", data.page_id);
         } else {
           console.error("[Baffle Ops] Sync Error:", data.error);
           alert(`Signal Failure: ${data.error}`);
         }
       }
     } catch (error) {
-       console.error("[Baffle Ops] Network/Proxy Error:", error);
-       alert("Network failure. Is the Express server running on port 3001?");
+       console.error("[Baffle Ops] Network/Bridge Error:", error);
+       alert("Network failure. Verify the Express bridge is active and reachable.");
     } finally {
       setLoading(false);
     }
@@ -283,7 +284,7 @@ const submitToNotion = async () => {
             <h1 className="text-xl font-black tracking-tighter italic uppercase text-slate-100">BATS Node</h1>
           </div>
           <p className="text-[9px] text-slate-500 uppercase font-bold tracking-[0.2em] mt-1">
-            S25 Optical Intake • {config.mode === 'live' ? 'Live Relay' : 'Offline'}
+            Optical Intake • {config.mode === 'live' ? 'Live Relay' : 'Offline'}
           </p>
         </div>
         <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-xl border transition-all ${showSettings ? 'bg-amber-500 border-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
@@ -311,6 +312,11 @@ const submitToNotion = async () => {
             <div>
               <label className="text-[10px] font-black uppercase text-emerald-500/70 tracking-widest">Baffle ID Assigned</label>
               <p className="text-2xl font-black text-emerald-400 font-mono tracking-tighter">{vaultData.baffleId}</p>
+              {vaultData.batsUrl && (
+                <a href={vaultData.batsUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-emerald-500 hover:text-emerald-300 underline mt-1 block">
+                  Verify in Vault Database
+                </a>
+              )}
             </div>
             <CheckCircle className="text-emerald-500" size={24} />
           </div>
@@ -509,7 +515,6 @@ const submitToNotion = async () => {
             </div>
           </div>
 
-          {/* New Fields from Baffle Ops Update */}
           {!isConsumable && (
             <div className="grid grid-cols-1 gap-3 border-t border-slate-800/50 pt-3">
               <div>
