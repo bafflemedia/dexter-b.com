@@ -62,9 +62,6 @@ const USERS = [
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
-  // TEMPORARY TELEMETRY: Logs what the backend actually sees (remove before production)
-  console.log(`[AUTH CHECK] Backend expects: ${process.env.PASS_DEXTERB}`);
-
   const user = USERS.find(u => u.username === username && u.password === password);
   
   if (!user) {
@@ -108,10 +105,7 @@ const requireAuth = (req, res, next) => {
     req.user = decoded; 
     next(); 
   } catch (err) {
-    // Log the specific JWT failure
     console.warn(`[AUTH PERIMETER] Clearance rejected: ${err.message}`);
-    
-    // Return a generic, safe response to the client
     return res.status(403).json({ error: 'Access Denied: Invalid or expired clearance.' });
   }
 };
@@ -180,19 +174,166 @@ app.get('/api/manifest', async (req, res) => {
   }
 });
 
-// Protected route example: BATS operations (Requires Auth)
-app.post('/api/notion/bats', requireAuth, async (req, res) => {
-  // Role-based logic check
+// ---------------------------------------------------------
+// GET: Retrieve BATS Inventory (Protected Read Bridge)
+// ---------------------------------------------------------
+app.get('/api/bats', requireAuth, async (req, res) => {
+  try {
+    const dbId = process.env.NOTION_BATS_DB_ID;
+    const secret = process.env.NOTION_SECRET_TOKEN;
+
+    if (!dbId || !secret) {
+      throw new Error('Intelligence mismatch: Missing Notion environmental variables for BATS.');
+    }
+
+    const response = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${secret}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({}) // Future iteration: Add filtering for specific categories/status
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Notion API GET Error:', errorData);
+      return res.status(response.status).json({ error: 'Failed to retrieve BATS data' });
+    }
+    
+    const data = await response.json();
+
+    // Map raw Notion pages to a clean, internal-safe shape.
+    // Property names must match the actual BATS Notion schema — verify on first live test.
+    // Relation fields (Category, Location, Projects) return IDs; resolve to names in a future pass.
+    const cleanAssets = data.results.map((page) => {
+      const props = page.properties;
+
+      // BAT ID may be a Notion formula field or a manually-set rich_text — try both.
+      const batId =
+        props['BAT ID']?.formula?.string ||
+        props['BAT ID']?.rich_text?.[0]?.plain_text ||
+        null;
+
+      return {
+        id: page.id,
+        batId,
+        batsUrl: batId ? `/bats/${batId}` : `/bats/${page.id}`,
+        name: props['Asset Name']?.title?.[0]?.plain_text || 'Unidentified Asset',
+        status: props['Status']?.select?.name || null,
+        assetClass: props['Asset Class']?.select?.name || null,
+        category: props['Category']?.select?.name || props['Category']?.relation?.[0]?.id || null,
+        location: props['Location']?.select?.name || props['Location']?.relation?.[0]?.id || null,
+        manufacturer: props['Manufacturer']?.rich_text?.[0]?.plain_text || null,
+        serialNumber: props['Serial Number']?.rich_text?.[0]?.plain_text || null,
+        price: props['Price']?.number ?? null,
+        warrantyExp: props['Warranty Exp']?.date?.start || null,
+        powerDraw: props['Power Draw']?.number ?? null,
+        syncStatus: props['Sync Status']?.select?.name || null,
+        primaryUser: props['Primary User']?.rich_text?.[0]?.plain_text || null,
+        functionalCheck: props['Functional Check']?.checkbox || false,
+        isPersonalTransfer: props['Personal Transfer']?.checkbox || false,
+        notes: props['Notes']?.rich_text?.[0]?.plain_text || null,
+        lastEdited: page.last_edited_time || null,
+      };
+    });
+
+    res.json(cleanAssets);
+  } catch (error) {
+    console.error('BATS Express GET Exception:', error.message);
+    res.status(500).json({ error: 'Internal Server Error fetching BATS database' });
+  }
+});
+
+// ---------------------------------------------------------
+// POST: Add new BATS Item (Protected Write Bridge)
+// ---------------------------------------------------------
+app.post('/api/bats', requireAuth, async (req, res) => {
+  // Role-based logic check: Reject write access for viewers
   if (req.user.role === 'viewer') {
     return res.status(403).json({ error: 'Clearance level insufficient for write access.' });
   }
 
-  // Insert your Notion POST fetch logic here for BATS additions
-  res.json({ message: `Access granted to BATS database for ${req.user.username}` });
+  const { assetData: ad = {}, receiptData: rd = {} } = req.body;
+
+  // Required field guard — Asset Name is the Notion title field and must be present.
+  if (!ad.name) {
+    return res.status(400).json({ error: 'Asset Name is required.' });
+  }
+
+  // Build the Notion properties object from the BATS intake form payload.
+  // Property names must match the actual BATS Notion schema — verify on first live test.
+  // Relation fields (Category, Location, Projects) are skipped here; they require
+  // live Notion page IDs that the frontend does not yet supply.
+  const properties = {
+    "Asset Name": {
+      title: [{ text: { content: ad.name } }]
+    },
+    "Status": {
+      select: { name: ad.status || "Available" }
+    },
+    "Asset Class": {
+      select: { name: ad.assetClass || "Expensed (Section 179)" }
+    },
+    "Sync Status": {
+      select: { name: ad.syncStatus || "Draft" }
+    },
+    "Functional Check": {
+      checkbox: ad.functionalCheck || false
+    },
+    "Personal Transfer": {
+      checkbox: ad.isPersonalTransfer || false
+    },
+  };
+
+  // Optional fields — only written to Notion when the form provides a value.
+  if (ad.serialNumber)      properties["Serial Number"]       = { rich_text: [{ text: { content: ad.serialNumber } }] };
+  if (ad.manufacturer)      properties["Manufacturer"]        = { rich_text: [{ text: { content: ad.manufacturer } }] };
+  if (ad.primaryUser)       properties["Primary User"]        = { rich_text: [{ text: { content: ad.primaryUser } }] };
+  if (ad.notes)             properties["Notes"]               = { rich_text: [{ text: { content: ad.notes } }] };
+  if (ad.aiFieldNote)       properties["AI Field Note"]       = { rich_text: [{ text: { content: ad.aiFieldNote } }] };
+  if (ad.referenceVideoUrl) properties["Reference Video URL"] = { url: ad.referenceVideoUrl };
+  if (ad.warrantyExp)       properties["Warranty Exp"]        = { date: { start: ad.warrantyExp } };
+  if (ad.price)             properties["Price"]               = { number: parseFloat(ad.price) };
+  if (ad.powerDraw)         properties["Power Draw"]          = { number: parseFloat(ad.powerDraw) };
+
+  // Receipt / transaction fields
+  if (rd.date)             properties["Transaction Date"]  = { date: { start: rd.date } };
+  if (rd.totalPrice)       properties["Receipt Total"]     = { number: parseFloat(rd.totalPrice) };
+  if (rd.qbTransactionId)  properties["QB Transaction ID"] = { rich_text: [{ text: { content: rd.qbTransactionId } }] };
+  if (rd.sourceUrl)        properties["Receipt URL"]       = { url: rd.sourceUrl };
+
+  try {
+    const response = await fetch('https://api.notion.com/v1/pages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.NOTION_SECRET_TOKEN}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        parent: { database_id: process.env.NOTION_BATS_DB_ID },
+        properties
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Notion API POST Error:', errorData);
+      return res.status(response.status).json({ error: 'Failed to write to BATS database' });
+    }
+    
+    const data = await response.json();
+    res.status(201).json({ message: 'Asset logged successfully', page_id: data.id });
+  } catch (error) {
+    console.error('BATS Express POST Exception:', error.message);
+    res.status(500).json({ error: 'Internal Server Error writing to BATS database' });
+  }
 });
 
 // ============================================================================
-// 7. FRONTEND DELIVERY & FALLBACK ROUTING (BATS Fix)
+// 7. FRONTEND DELIVERY & FALLBACK ROUTING
 // ============================================================================
 
 // Serve static files from the React build directory
