@@ -16,6 +16,16 @@ Read these first:
 
 Also respect AGENTS.md if present.
 
+## Repository Boundary
+
+dexter-b.com is the Dexter B personal brand website.
+
+BATS is only one protected internal application within the site.
+
+Do not assume every route, component, database, or page belongs to BATS.
+
+Public landing page content, public links, affiliate/product presentation, and personal brand site content must be preserved unless Dexter explicitly asks to change them.
+
 ## Project
 
 BATS = Baffle Asset Tag System.

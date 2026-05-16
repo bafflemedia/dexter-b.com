@@ -21,6 +21,22 @@ Dexter_B_Web_Manifest = public website, affiliate, product presentation, and CRM
 
 B-READ = Baffle knowledge base, tech manual, glossary, documentation, and research support.
 
+## Repository Scope
+
+This repository powers dexter-b.com.
+
+dexter-b.com is the Dexter B personal brand website. It includes:
+- the public landing page,
+- personal brand content,
+- public links,
+- affiliate/product presentation,
+- Dexter B site sections,
+- and the protected BATS inventory route.
+
+BATS is one protected application inside the larger dexter-b.com site.
+
+BATS must not be treated as the entire website.
+
 ## Current Architecture
 
 Frontend:
