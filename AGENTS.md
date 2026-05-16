@@ -72,6 +72,31 @@ Never log secrets or passwords.
 
 Remove any credential telemetry if found.
 
+## Notion and MCP Access
+
+This repo may use MCP-enabled AI tools to inspect selected Notion databases.
+
+Current validated tools:
+- Claude Code with Notion MCP through `.claude/settings.json`
+- OpenAI Codex with Notion MCP registered through `codex mcp add notion --url https://mcp.notion.com/mcp`
+
+AI agents must treat Notion access as scoped and permissioned.
+
+Allowed by default:
+- inspect selected database schemas,
+- compare schema to repo docs,
+- summarize field names and property types,
+- suggest mapper changes.
+
+Not allowed without explicit Dexter approval:
+- creating production records,
+- bulk editing records,
+- deleting or archiving records,
+- renaming databases,
+- changing property types,
+- restructuring the workspace,
+- modifying financial or receipt records.
+
 ## Implementation Rules
 
 1. Preserve current working routes.

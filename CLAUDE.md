@@ -20,11 +20,11 @@ Also respect AGENTS.md if present.
 
 dexter-b.com is the Dexter B personal brand website.
 
-BATS is only one protected internal application within the site.
+BATS is one protected internal inventory application inside the larger site.
 
-Do not assume every route, component, database, or page belongs to BATS.
+Do not treat BATS as the whole codebase.
 
-Public landing page content, public links, affiliate/product presentation, and personal brand site content must be preserved unless Dexter explicitly asks to change them.
+Preserve public site content, personal brand content, affiliate/product presentation, and landing page behavior unless Dexter explicitly asks to change them.
 
 ## Project
 
@@ -137,3 +137,10 @@ Do not wedge software/subscriptions into BATS v1.
 Do not add an Asset Type layer unless Dexter approves it.
 
 Do not redesign the existing BATS UI unless asked.
+
+## Claude Code Notion MCP
+
+In this repo, Claude Code Notion MCP is configured through:
+
+```text
+.claude/settings.json
