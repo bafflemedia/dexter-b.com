@@ -15,27 +15,28 @@ interface Config {
 }
 
 interface AssetData {
-  name: string; 
-  categoryId: string; 
-  locationId: string; 
-  projectIds: string[]; 
-  index: string; 
-  assetClass: string; 
-  status: string; 
-  price: string; 
-  serialNumber: string; 
-  manufacturer: string; 
-  warrantyExp: string; 
-  powerDraw: string; 
-  notes: string; 
-  aiFieldNote: string; 
-  primaryUser: string; 
-  syncStatus: string; 
+  name: string;
+  categoryPageId: string;
+  locationPageId: string;
+  projectPageIds: string[];
+  index: string;
+  assetClass: string;
+  status: string;
+  unitPrice: string;
+  serialNumber: string;
+  manufacturer: string;
+  warrantyExpiration: string;
+  powerDrawWatts: string;
+  notes: string;
+  aiFieldNote: string;
+  primaryUser: string;
+  syncStatus: string;
+  // UI-only — not sent to Notion
   isPersonalTransfer: boolean;
   manualLink?: string;
   referenceVideoUrl: string;
   functionalCheck: boolean;
-  photoGallery: string[]; 
+  photoGallery: string[];
 }
 
 interface ReceiptData {
@@ -104,10 +105,10 @@ export default function BaffleAssetPro() {
   const [vaultData, setVaultData] = useState<VaultData>({ baffleId: null, batsUrl: null });
 
   const [asset, setAsset] = useState<AssetData>({
-    name: '', categoryId: '', locationId: '', projectIds: [], index: '', 
-    assetClass: 'Expensed (Section 179)', status: 'Available', price: '', 
-    serialNumber: '', manufacturer: '', warrantyExp: '', powerDraw: '', 
-    notes: '', aiFieldNote: '', primaryUser: 'DexterB', syncStatus: 'Draft', 
+    name: '', categoryPageId: '', locationPageId: '', projectPageIds: [], index: '',
+    assetClass: 'Expensed (Section 179)', status: 'Available', unitPrice: '',
+    serialNumber: '', manufacturer: '', warrantyExpiration: '', powerDrawWatts: '',
+    notes: '', aiFieldNote: '', primaryUser: 'DexterB', syncStatus: 'Draft',
     isPersonalTransfer: false, referenceVideoUrl: '', functionalCheck: false, photoGallery: []
   });
 
@@ -141,8 +142,8 @@ export default function BaffleAssetPro() {
 
   const toggleProject = (id: string) => {
     setAsset(prev => {
-      const exists = prev.projectIds.includes(id);
-      return { ...prev, projectIds: exists ? prev.projectIds.filter(p => p !== id) : [...prev.projectIds, id] };
+      const exists = prev.projectPageIds.includes(id);
+      return { ...prev, projectPageIds: exists ? prev.projectPageIds.filter((p: string) => p !== id) : [...prev.projectPageIds, id] };
     });
   };
 
@@ -166,11 +167,11 @@ export default function BaffleAssetPro() {
   };
 
   useEffect(() => {
-    if (asset.categoryId) {
-      const cat = mockCategories.find(c => c.id === asset.categoryId);
+    if (asset.categoryPageId) {
+      const cat = mockCategories.find(c => c.id === asset.categoryPageId);
       if (cat) setAsset(prev => ({ ...prev, index: (cat.lastIndex + 1).toString() }));
     }
-  }, [asset.categoryId]);
+  }, [asset.categoryPageId]);
 
   const handleImageCapture = (e: ChangeEvent<HTMLInputElement>, type: 'photo' | 'receipt') => {
     const file = e.target.files?.[0];
@@ -190,8 +191,8 @@ export default function BaffleAssetPro() {
 
   const executeReset = () => {
     setAsset({
-      ...asset, name: '', serialNumber: '', price: '', powerDraw: '', notes: '', aiFieldNote: '', 
-      warrantyExp: '', syncStatus: 'Draft', projectIds: [], isPersonalTransfer: false, 
+      ...asset, name: '', serialNumber: '', unitPrice: '', powerDrawWatts: '', notes: '', aiFieldNote: '',
+      warrantyExpiration: '', syncStatus: 'Draft', projectPageIds: [], isPersonalTransfer: false,
       referenceVideoUrl: '', functionalCheck: false, photoGallery: []
     });
     setReceipt({
@@ -208,16 +209,32 @@ export default function BaffleAssetPro() {
     try {
       if (config.mode === 'mock') {
         await new Promise(r => setTimeout(r, 1200));
-        const catCode = mockCategories.find(c => c.id === asset.categoryId)?.code || "UNK";
+        const catCode = mockCategories.find(c => c.id === asset.categoryPageId)?.code || "UNK";
         const paddedIndex = asset.index.padStart(3, '0');
         setVaultData({
           baffleId: `BM-${catCode}-${paddedIndex}`,
           batsUrl: `https://baffle.link/BM-${catCode}-${paddedIndex}`
         });
       } else {
-        // ALIGNMENT: Packaging exactly what the Express POST route intercepts
-        const payload = { assetData: asset, receiptData: receipt };
-        console.log("[Baffle Ops] Transmitting payload to bridge:", payload);
+        const assetPayload = {
+          name: asset.name,
+          categoryPageId: asset.categoryPageId || undefined,
+          locationPageId: asset.locationPageId || undefined,
+          projectPageIds: asset.projectPageIds.length ? asset.projectPageIds : undefined,
+          receiptTransactionPageId: (receiptMode === 'existing' && receipt.id) ? receipt.id : undefined,
+          assetClass: asset.assetClass,
+          status: asset.status,
+          primaryUser: asset.primaryUser,
+          syncStatus: asset.syncStatus,
+          manufacturer: asset.manufacturer || undefined,
+          serialNumber: asset.serialNumber || undefined,
+          unitPrice: asset.unitPrice ? parseFloat(asset.unitPrice) : undefined,
+          warrantyExpiration: asset.warrantyExpiration || undefined,
+          powerDrawWatts: asset.powerDrawWatts ? parseFloat(asset.powerDrawWatts) : undefined,
+          notes: asset.notes || undefined,
+          aiFieldNote: asset.aiFieldNote || undefined,
+        };
+        const payload = { assetData: assetPayload };
         
         const response = await fetch(config.bridgeUrl, { 
           method: 'POST', 
@@ -360,7 +377,7 @@ export default function BaffleAssetPro() {
             </div>
             <div>
               <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest">Category</label>
-              <select name="categoryId" value={asset.categoryId} onChange={handleAssetChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-bold outline-none text-slate-300">
+              <select name="categoryPageId" value={asset.categoryPageId} onChange={handleAssetChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-bold outline-none text-slate-300">
                 <option value="">Select...</option>
                 {mockCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -379,7 +396,7 @@ export default function BaffleAssetPro() {
                 <button 
                   key={p.id} onClick={() => toggleProject(p.id)}
                   className={`px-3 py-2 rounded-lg text-[10px] font-bold border transition-all active:scale-95 ${
-                    asset.projectIds.includes(p.id) ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
+                    asset.projectPageIds.includes(p.id) ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600'
                   }`}
                 >
                   {p.name}
@@ -389,7 +406,7 @@ export default function BaffleAssetPro() {
           </div>
           <div>
             <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest flex items-center gap-1"><MapPin size={10}/> Location</label>
-            <select name="locationId" value={asset.locationId} onChange={handleAssetChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-bold outline-none">
+            <select name="locationPageId" value={asset.locationPageId} onChange={handleAssetChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-bold outline-none">
               <option value="">Select...</option>
               {mockLocations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
@@ -489,7 +506,7 @@ export default function BaffleAssetPro() {
                 <label className={`text-[10px] font-black uppercase ml-1 tracking-widest flex items-center gap-1 ${asset.isPersonalTransfer ? 'text-amber-500' : 'text-slate-500'}`}>
                   <DollarSign size={10}/> {asset.isPersonalTransfer ? 'Fair Market Value (FMV)' : 'Unit Price (Cost Basis)'}
                 </label>
-                <input name="price" type="number" value={asset.price} onChange={handleAssetChange} placeholder={isConsumable ? "Optional (Receipt Total Used)" : "0.00"} className={`w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-mono outline-none focus:border-amber-500 ${isConsumable ? 'text-slate-500' : 'text-slate-100'}`} />
+                <input name="unitPrice" type="number" value={asset.unitPrice} onChange={handleAssetChange} placeholder={isConsumable ? "Optional (Receipt Total Used)" : "0.00"} className={`w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-mono outline-none focus:border-amber-500 ${isConsumable ? 'text-slate-500' : 'text-slate-100'}`} />
                 {!asset.isPersonalTransfer && !isConsumable && (
                   <p className="text-[8px] text-slate-600 uppercase font-black ml-1 mt-1 tracking-widest">Used for Depreciation vs Receipt Total</p>
                 )}
@@ -507,11 +524,11 @@ export default function BaffleAssetPro() {
           <div className="grid grid-cols-2 gap-3">
              <div>
               <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest flex items-center gap-1"><ShieldAlert size={10}/> Warranty Exp</label>
-              <input name="warrantyExp" disabled={isConsumable} type="date" value={asset.warrantyExp} onChange={handleAssetChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-[10px] font-mono outline-none text-slate-400 disabled:opacity-50" />
+              <input name="warrantyExpiration" disabled={isConsumable} type="date" value={asset.warrantyExpiration} onChange={handleAssetChange} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-[10px] font-mono outline-none text-slate-400 disabled:opacity-50" />
             </div>
             <div>
               <label className="text-[10px] font-black uppercase text-slate-500 ml-1 tracking-widest flex items-center gap-1"><Zap size={10}/> Power (W)</label>
-              <input name="powerDraw" disabled={isConsumable} type="number" value={asset.powerDraw} onChange={handleAssetChange} placeholder={isConsumable ? "N/A" : ""} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-mono outline-none disabled:opacity-50" />
+              <input name="powerDrawWatts" disabled={isConsumable} type="number" value={asset.powerDrawWatts} onChange={handleAssetChange} placeholder={isConsumable ? "N/A" : ""} className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs font-mono outline-none disabled:opacity-50" />
             </div>
           </div>
 
@@ -577,9 +594,9 @@ export default function BaffleAssetPro() {
         </button>
         <button 
           onClick={submitToNotion}
-          disabled={loading || !asset.name || !asset.categoryId}
+          disabled={loading || !asset.name || !asset.categoryPageId}
           className={`flex-1 flex items-center justify-center gap-3 font-black text-sm tracking-wide uppercase rounded-2xl transition-all shadow-2xl active:scale-[0.98] border-t border-white/10 ${
-            loading || !asset.name || !asset.categoryId
+            loading || !asset.name || !asset.categoryPageId
               ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
               : 'bg-amber-600 text-black hover:bg-amber-500 shadow-amber-900/40'
           }`}
