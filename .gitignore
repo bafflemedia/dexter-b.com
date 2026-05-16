@@ -26,3 +26,4 @@ dist-ssr
 # Securities & Secrets\
 .env.local
 .env.*.local
+.claude/settings.local.json
