@@ -187,14 +187,20 @@ describe('BATS intake UI', () => {
 
   it('shows a visible error when live save fails', async () => {
     const user = userEvent.setup();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ error: 'Failed to write to BATS database' }, false)));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
+      error: 'Failed to write to BATS database',
+      notion: {
+        code: 'validation_error',
+        message: 'Status is not a valid select option.',
+      },
+    }, false)));
     const { container } = renderForm();
 
     await user.type(screen.getByPlaceholderText('e.g. Samsung 55 UHD'), 'Camera Body');
     await user.selectOptions(selectByName(container, 'categoryPageId'), 'cat1');
     await user.click(screen.getByRole('button', { name: /save bats/i }));
 
-    expect(await screen.findByText(/save failed: failed to write to bats database/i)).toBeInTheDocument();
+    expect(await screen.findByText(/save failed: validation_error: status is not a valid select option/i)).toBeInTheDocument();
     expect(screen.queryByText(/NODE-/)).not.toBeInTheDocument();
   });
 });

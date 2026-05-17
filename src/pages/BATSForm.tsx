@@ -55,6 +55,16 @@ interface VaultData {
   batsUrl: string | null;
 }
 
+interface ApiErrorPayload {
+  error?: string;
+  notion?: {
+    code?: string | null;
+    message?: string | null;
+    status?: number | null;
+    requestId?: string | null;
+  };
+}
+
 interface BATSFormProps {
   mode?: 'new' | 'edit';
 }
@@ -281,7 +291,11 @@ export default function BATSForm({ mode = 'new' }: BATSFormProps) {
           });
           console.log("[Baffle Ops] Notion Vault Save Complete. Internal ID:", savedPageId);
         } else {
-          throw new Error(data.error || `Save failed with HTTP ${response.status}`);
+          const errorData = data as ApiErrorPayload;
+          const notionDetail = errorData.notion?.message
+            ? `${errorData.notion.code || 'notion_error'}: ${errorData.notion.message}`
+            : null;
+          throw new Error(notionDetail || errorData.error || `Save failed with HTTP ${response.status}`);
         }
       }
     } catch (error) {
