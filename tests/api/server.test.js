@@ -289,6 +289,35 @@ describe('BATS API routes', () => {
     expect(payload.properties).not.toHaveProperty('BATS URL');
   });
 
+  it('returns sanitized Notion error details for failed BATS creates', async () => {
+    const cookie = await loginCookie('dexterb', 'guardian-pass');
+    const fetchMock = vi.fn().mockResolvedValue(notionResponse({
+      object: 'error',
+      status: 400,
+      code: 'validation_error',
+      message: 'Status is not a valid select option.',
+      request_id: 'request-123',
+    }, false, 400));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await request(app)
+      .post('/api/bats')
+      .set('Cookie', cookie)
+      .send({ assetData: { name: 'Camera Body' } })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body).toEqual({
+          error: 'Failed to write to BATS database',
+          notion: {
+            code: 'validation_error',
+            message: 'Status is not a valid select option.',
+            status: 400,
+            requestId: 'request-123',
+          },
+        });
+      });
+  });
+
   it('updates only explicitly supplied PATCH fields and supports clears', async () => {
     const cookie = await loginCookie('kate', 'collaborator-pass');
     const fetchMock = vi.fn().mockResolvedValue(notionResponse({ id: 'page-1' }));

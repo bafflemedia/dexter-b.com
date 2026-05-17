@@ -55,6 +55,16 @@ interface VaultData {
   batsUrl: string | null;
 }
 
+interface ApiErrorPayload {
+  error?: string;
+  notion?: {
+    code?: string | null;
+    message?: string | null;
+    status?: number | null;
+    requestId?: string | null;
+  };
+}
+
 interface BATSFormProps {
   mode?: 'new' | 'edit';
 }
@@ -67,7 +77,10 @@ interface MockReceipt { id: string; name: string; date: string; merchantName: st
 interface MockMerchant { id: string; name: string; type: string; }
 
 // ALIGNMENT UPDATE: Pointing directly to the newly established Express protected route
-const INITIAL_CONFIG: Config = { apiKey: '', databaseId: '', bridgeUrl: '/api/bats', mode: 'mock' };
+const INITIAL_CONFIG: Config = { apiKey: '', databaseId: '', bridgeUrl: '/api/bats', mode: 'live' };
+const notionPageIdPattern = /^[0-9a-f]{32}$|^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const asNotionPageId = (value: string) => notionPageIdPattern.test(value) ? value : undefined;
 
 // --- MOCK RELATIONS (Target for v1.4 GET request replacement) ---
 const mockCategories: MockCategory[] = [
@@ -113,6 +126,7 @@ export default function BATSForm({ mode = 'new' }: BATSFormProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const [showResetModal, setShowResetModal] = useState<boolean>(false); 
   const [vaultData, setVaultData] = useState<VaultData>({ baffleId: null, batsUrl: null });
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [asset, setAsset] = useState<AssetData>({
     name: sourceAsset?.name || '',
@@ -228,6 +242,7 @@ export default function BATSForm({ mode = 'new' }: BATSFormProps) {
 
   const submitToNotion = async () => {
     setLoading(true);
+    setSaveError(null);
     try {
       if (config.mode === 'mock') {
         await new Promise(r => setTimeout(r, 1200));
@@ -240,10 +255,10 @@ export default function BATSForm({ mode = 'new' }: BATSFormProps) {
       } else {
         const assetPayload = {
           name: asset.name,
-          categoryPageId: asset.categoryPageId || undefined,
-          locationPageId: asset.locationPageId || undefined,
-          projectPageIds: asset.projectPageIds.length ? asset.projectPageIds : undefined,
-          receiptTransactionPageId: (receiptMode === 'existing' && receipt.id) ? receipt.id : undefined,
+          categoryPageId: asNotionPageId(asset.categoryPageId),
+          locationPageId: asNotionPageId(asset.locationPageId),
+          projectPageIds: asset.projectPageIds.map(asNotionPageId).filter((id): id is string => Boolean(id)),
+          receiptTransactionPageId: (receiptMode === 'existing' && receipt.id) ? asNotionPageId(receipt.id) : undefined,
           assetClass: asset.assetClass,
           status: asset.status,
           primaryUser: asset.primaryUser,
@@ -276,13 +291,16 @@ export default function BATSForm({ mode = 'new' }: BATSFormProps) {
           });
           console.log("[Baffle Ops] Notion Vault Save Complete. Internal ID:", savedPageId);
         } else {
-          console.error("[Baffle Ops] Sync Error:", data.error);
-          alert(`Signal Failure: ${data.error}`);
+          const errorData = data as ApiErrorPayload;
+          const notionDetail = errorData.notion?.message
+            ? `${errorData.notion.code || 'notion_error'}: ${errorData.notion.message}`
+            : null;
+          throw new Error(notionDetail || errorData.error || `Save failed with HTTP ${response.status}`);
         }
       }
     } catch (error) {
        console.error("[Baffle Ops] Network/Bridge Error:", error);
-       alert("Network failure. Verify the Express bridge is active and reachable.");
+       setSaveError(error instanceof Error ? error.message : "Network failure. Verify the Express bridge is active and reachable.");
     } finally {
       setLoading(false);
     }
@@ -366,6 +384,12 @@ export default function BATSForm({ mode = 'new' }: BATSFormProps) {
             </div>
             <CheckCircle className="text-emerald-500" size={24} />
           </div>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="mb-6 p-4 bg-red-950/40 border border-red-900/60 rounded-2xl text-red-200 text-xs font-bold uppercase tracking-[0.16em] leading-relaxed">
+          Save failed: {saveError}
         </div>
       )}
 

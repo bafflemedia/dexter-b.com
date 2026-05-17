@@ -95,8 +95,6 @@ describe('BATS intake UI', () => {
     vi.stubGlobal('fetch', fetchMock);
     const { container } = renderForm();
 
-    await user.click(container.querySelector('header button') as HTMLButtonElement);
-    await user.click(screen.getByRole('button', { name: 'LIVE' }));
     await user.type(screen.getByPlaceholderText('e.g. Samsung 55 UHD'), 'Camera Body');
     await user.selectOptions(selectByName(container, 'categoryPageId'), 'cat1');
     await user.selectOptions(selectByName(container, 'locationPageId'), 'loc1');
@@ -118,8 +116,7 @@ describe('BATS intake UI', () => {
     expect(body).toEqual({
       assetData: {
         name: 'Camera Body',
-        categoryPageId: 'cat1',
-        locationPageId: 'loc1',
+        projectPageIds: [],
         assetClass: 'Expensed (Section 179)',
         status: 'Available',
         primaryUser: 'DexterB',
@@ -144,8 +141,6 @@ describe('BATS intake UI', () => {
 
     expect(screen.getByRole('heading', { name: /edit bats asset/i })).toBeInTheDocument();
 
-    await user.click(container.querySelector('header button') as HTMLButtonElement);
-    await user.click(screen.getByRole('button', { name: 'LIVE' }));
     await user.type(screen.getByPlaceholderText('e.g. Samsung 55 UHD'), 'Edited Camera');
     await user.selectOptions(selectByName(container, 'categoryPageId'), 'cat1');
     await user.click(screen.getByRole('button', { name: /save bats/i }));
@@ -188,5 +183,24 @@ describe('BATS intake UI', () => {
     expect(selectByName(container, 'unitPrice')).toHaveValue(1299);
     expect(selectByName(container, 'serialNumber')).toHaveValue('PRIVATE-SERIAL');
     expect(selectByName(container, 'notes')).toHaveValue('Already registered.');
+  });
+
+  it('shows a visible error when live save fails', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
+      error: 'Failed to write to BATS database',
+      notion: {
+        code: 'validation_error',
+        message: 'Status is not a valid select option.',
+      },
+    }, false)));
+    const { container } = renderForm();
+
+    await user.type(screen.getByPlaceholderText('e.g. Samsung 55 UHD'), 'Camera Body');
+    await user.selectOptions(selectByName(container, 'categoryPageId'), 'cat1');
+    await user.click(screen.getByRole('button', { name: /save bats/i }));
+
+    expect(await screen.findByText(/save failed: validation_error: status is not a valid select option/i)).toBeInTheDocument();
+    expect(screen.queryByText(/NODE-/)).not.toBeInTheDocument();
   });
 });

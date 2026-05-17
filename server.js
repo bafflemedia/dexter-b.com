@@ -265,6 +265,16 @@ export const mapAssetToNotionProperties = (ad) => {
   return props;
 };
 
+const getNotionErrorPayload = (fallbackMessage, errorData = {}) => ({
+  error: fallbackMessage,
+  notion: {
+    code: errorData.code || null,
+    message: errorData.message || null,
+    status: errorData.status || null,
+    requestId: errorData.request_id || null,
+  },
+});
+
 // ---------------------------------------------------------
 // GET: Retrieve BATS Inventory (Protected Read Bridge)
 // ---------------------------------------------------------
@@ -338,7 +348,7 @@ app.post('/api/bats', requireAuth, async (req, res) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Notion API POST Error:', errorData);
-      return res.status(response.status).json({ error: 'Failed to write to BATS database' });
+      return res.status(response.status).json(getNotionErrorPayload('Failed to write to BATS database', errorData));
     }
     
     const data = await response.json();
@@ -422,7 +432,7 @@ app.patch('/api/bats/:pageId', requireAuth, async (req, res) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Notion API PATCH Error:', errorData);
-      return res.status(response.status).json({ error: 'Failed to update BATS record' });
+      return res.status(response.status).json(getNotionErrorPayload('Failed to update BATS record', errorData));
     }
 
     const data = await response.json();
