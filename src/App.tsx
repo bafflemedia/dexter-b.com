@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useState } from 'react';
 import Home from './pages/Home';
 import BATS from './pages/BATS'; 
+import BATSForm from './pages/BATSForm';
 import { Login } from './pages/Login';
 
 const App: React.FC = () => {
@@ -28,6 +29,18 @@ const App: React.FC = () => {
             path="/bats" 
             element={
               isAuthenticated ? <BATS /> : <Navigate to="/login" replace />
+            } 
+          />
+          <Route 
+            path="/bats/new" 
+            element={
+              isAuthenticated ? <BATSForm mode="new" /> : <Navigate to="/login" replace />
+            } 
+          />
+          <Route 
+            path="/bats/:batId/edit" 
+            element={
+              isAuthenticated ? <BATSForm mode="edit" /> : <Navigate to="/login" replace />
             } 
           />
         </Routes>
