@@ -7,7 +7,6 @@ PassengerNodejs /opt/alt/alt-nodejs24/root/bin/node
 PassengerStartupFile server.js
 PassengerBaseURI /
 PassengerRestartDir /home/u501702799/domains/dexter-b.com/nodejs/tmp
-SetEnv NODE_OPTIONS "--require /home/u501702799/domains/dexter-b.com/public_html/.builds/config/preload-timestamp.js"
 SetEnv LSNODE_CONSOLE_LOG console.log
 RewriteRule ^\.builds - [F,L]
 
