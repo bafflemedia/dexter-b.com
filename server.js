@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
+import { fileURLToPath } from 'url';
 import fs from 'fs'; // INJECTED: File System module
 
 // 1. Initialize Local Vault (The Fix)
@@ -454,6 +454,6 @@ export const startServer = (port = PORT) => app.listen(port, () => {
 export { app };
 
 // 8. Ignition
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.env.NODE_ENV !== 'test') {
   startServer();
 }
