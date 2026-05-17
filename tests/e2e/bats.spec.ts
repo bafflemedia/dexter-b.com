@@ -63,6 +63,8 @@ test('logs in and completes the BATS mock sync flow', async ({ page }) => {
 
   await login(page);
   await openNewAssetForm(page);
+  await page.locator('header button').click();
+  await page.getByRole('button', { name: 'MOCK' }).click();
   await fillRequiredBatsFields(page);
 
   await expect(page.getByRole('button', { name: /save bats/i })).toBeEnabled();
@@ -96,8 +98,6 @@ test('sends canonical BATS live payload and handles success', async ({ page }) =
   await login(page);
   await openNewAssetForm(page);
 
-  await page.locator('header button').click();
-  await page.getByRole('button', { name: 'LIVE' }).click();
   await fillRequiredBatsFields(page);
   await page.locator('select[name="locationPageId"]').selectOption('loc1');
   await page.locator('input[name="serialNumber"]').fill('PRIVATE-SERIAL');
@@ -107,11 +107,10 @@ test('sends canonical BATS live payload and handles success', async ({ page }) =
 
   await expect(page.getByText('NODE-1234')).toBeVisible();
   expect(capturedBody).toEqual({
-    assetData: {
-      name: 'Studio Display',
-      categoryPageId: 'cat1',
-      locationPageId: 'loc1',
-      assetClass: 'Expensed (Section 179)',
+      assetData: {
+        name: 'Studio Display',
+        projectPageIds: [],
+        assetClass: 'Expensed (Section 179)',
       status: 'Available',
       primaryUser: 'DexterB',
       syncStatus: 'Draft',
