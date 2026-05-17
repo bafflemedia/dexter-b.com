@@ -12,21 +12,17 @@ SetEnv LSNODE_CONSOLE_LOG console.log
 RewriteRule ^\.builds - [F,L]
 
 # ----------------------------------------------------------------------
-# 2. SEO & CANONICALIZATION (Signal Processing)
+# 2. SEO & CANONICALIZATION
 # ----------------------------------------------------------------------
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Force HTTPS and WWW (Consolidates traffic to one "Source of Truth")
+  # Keep public traffic canonical before it reaches Passenger.
   RewriteCond %{HTTPS} off [OR]
   RewriteCond %{HTTP_HOST} !^www\. [NC]
   RewriteRule ^(.*)$ https://www.dexter-b.com/$1 [L,R=301]
-
-  # ----------------------------------------------------------------------
-  # 3. SPA ROUTING (Prevents 404s on Refresh)
-  # ----------------------------------------------------------------------
-  # If the request isn't a physical file or directory, send it to index.html
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
 </IfModule>
+
+# React SPA fallback and API routing are handled by Express in server.js.
+# Do not rewrite /login, /bats, or /api/* to /index.html here; that bypasses
+# Passenger/Express and can break both the landing page and protected routes.
