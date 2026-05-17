@@ -11,7 +11,7 @@ process.env.NOTION_SECRET_TOKEN = 'test-notion-token';
 process.env.NOTION_BATS_DB_ID = 'test-bats-db';
 process.env.NOTION_MANIFEST_DB_ID = 'test-manifest-db';
 
-const { app, mapAssetToNotionProperties, mapNotionPageToAsset } = await import('../../server.js');
+const { app, mapAssetToNotionProperties, mapNotionPageToAsset, shouldRedirectToCanonicalHost } = await import('../../server.js');
 
 const notionResponse = (body, ok = true, status = ok ? 200 : 500) => ({
   ok,
@@ -27,6 +27,36 @@ const loginCookie = async (username, password) => {
 
   return response.headers['set-cookie'];
 };
+
+const mockReq = (headers, protocol = 'http') => ({
+  get: (name) => headers[name.toLowerCase()],
+  protocol,
+});
+
+describe('Production host redirects', () => {
+  it('redirects public apex and insecure canonical requests', () => {
+    expect(shouldRedirectToCanonicalHost(mockReq({
+      host: 'dexter-b.com',
+      'x-forwarded-proto': 'https',
+    }))).toBe(true);
+
+    expect(shouldRedirectToCanonicalHost(mockReq({
+      host: 'www.dexter-b.com',
+      'x-forwarded-proto': 'http',
+    }))).toBe(true);
+  });
+
+  it('allows canonical HTTPS and internal proxy hosts through', () => {
+    expect(shouldRedirectToCanonicalHost(mockReq({
+      host: 'www.dexter-b.com',
+      'x-forwarded-proto': 'https',
+    }))).toBe(false);
+
+    expect(shouldRedirectToCanonicalHost(mockReq({
+      host: '127.0.0.1:3000',
+    }))).toBe(false);
+  });
+});
 
 describe('BATS Notion mappers', () => {
   it('maps Notion pages to the internal BATS asset shape', () => {

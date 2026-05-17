@@ -23,15 +23,26 @@ if (fs.existsSync(path.join(__dirname, '.env.local'))) {
 // 2. Initialize Express
 const app = express();
 const PORT = process.env.PORT || 3000;
+const CANONICAL_HOST = 'www.dexter-b.com';
+const APEX_HOST = 'dexter-b.com';
+
+app.set('trust proxy', true);
+
+export const shouldRedirectToCanonicalHost = (req) => {
+  const forwardedHost = req.get('x-forwarded-host');
+  const host = (forwardedHost || req.get('host') || '').split(',')[0].trim().toLowerCase();
+  const forwardedProto = req.get('x-forwarded-proto');
+  const protocol = (forwardedProto || req.protocol || '').split(',')[0].trim().toLowerCase();
+  const isPublicHost = host === CANONICAL_HOST || host === APEX_HOST;
+
+  return isPublicHost && (host !== CANONICAL_HOST || protocol !== 'https');
+};
 
 // 3. PRODUCTION GUARD: HTTPS & WWW Redirect
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
-    const host = req.get('host') || '';
-    const isHttps = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https';
-
-    if (!isHttps || !host.startsWith('www.')) {
-      return res.redirect(301, `https://www.dexter-b.com${req.url}`);
+    if (shouldRedirectToCanonicalHost(req)) {
+      return res.redirect(301, `https://${CANONICAL_HOST}${req.originalUrl}`);
     }
     next();
   });
